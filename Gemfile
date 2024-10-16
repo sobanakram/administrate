@@ -1,5 +1,5 @@
 source "https://rubygems.org"
-ruby "3.2.2" unless ENV["CI"]
+ruby "3.2.2" unless ENV["CI"] && !ENV["DIFF_CHECK_APPRAISAL"]
 
 gemspec
 
@@ -16,9 +16,9 @@ gem "sentry-rails"
 gem "sentry-ruby"
 gem "unicorn"
 
-gem "cssbundling-rails", "~> 1.2"
-gem "jsbundling-rails", "~> 1.1"
-gem "sprockets-rails", "~> 3.4"
+gem "cssbundling-rails", "~> 1.4"
+gem "jsbundling-rails", "~> 1.3"
+gem "sprockets-rails", "~> 3.5"
 
 group :development, :test do
   gem "appraisal"
