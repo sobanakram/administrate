@@ -88,7 +88,7 @@ module Administrate
         table_name = query_table_name(attr)
         searchable_fields(attr).map do |field|
           column_name = column_to_query(field)
-          "LOWER(CAST(#{table_name}.#{column_name} AS CHAR(256))) LIKE ?"
+          "#{table_name}.#{column_name} ILIKE ?"
         end.join(" OR ")
       end.join(" OR ")
     end
