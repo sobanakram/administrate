@@ -42,6 +42,14 @@ button,
   }
 }
 
+
+form.button_to { /* stylelint-disable selector-no-qualifying-type, selector-class-pattern */
+  .link {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 .button--alt {
   background-color: transparent;
   border: $base-border;
@@ -52,12 +60,29 @@ button,
 .button--danger {
   background-color: $red;
 
-  &:hover {
+  &:not(.link):hover {
     background-color: mix($black, $red, 20%);
     color: $white;
+  }
+
+  &:not(.link):disabled:hover {
+    background-color: mix($black, $red, 20%);
   }
 }
 
 .button--nav {
   margin-bottom: $base-spacing;
+}
+
+.button--tooltip {
+  background: none;
+	border: none;
+	color: inherit;
+	cursor: pointer;
+  padding: 0;
+
+  /* stylelint-disable declaration-no-important */
+  &:hover {
+    background-color: unset !important;
+  }
 }

@@ -63,6 +63,14 @@ module Administrate
       end
     end
 
+    def valid_filters
+      if @dashboard.class.const_defined?(:COLLECTION_FILTERS)
+        @dashboard.class.const_get(:COLLECTION_FILTERS).stringify_keys
+      else
+        {}
+      end
+    end
+
     private
 
     def apply_filter(filter, filter_param, resources)
@@ -116,14 +124,6 @@ module Administrate
         .where(query_template, *query_values)
     end
 
-    def valid_filters
-      if @dashboard.class.const_defined?(:COLLECTION_FILTERS)
-        @dashboard.class.const_get(:COLLECTION_FILTERS).stringify_keys
-      else
-        {}
-      end
-    end
-
     def attribute_types
       @dashboard.class.const_get(:ATTRIBUTE_TYPES)
     end
@@ -133,7 +133,6 @@ module Administrate
         provided_class_name = attribute_types[attr].options[:class_name]
         unquoted_table_name =
           if provided_class_name
-            Administrate.warn_of_deprecated_option(:class_name)
             provided_class_name.constantize.table_name
           else
             @scoped_resource.reflect_on_association(attr).klass.table_name

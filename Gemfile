@@ -1,5 +1,5 @@
 source "https://rubygems.org"
-ruby "3.4.1" unless ENV["CI"] && !ENV["DIFF_CHECK_APPRAISAL"]
+ruby "3.4.6" unless ENV["CI"] && !ENV["DIFF_CHECK_APPRAISAL"]
 
 gemspec
 
@@ -26,7 +26,7 @@ group :development, :test do
   gem "byebug"
   gem "dotenv-rails"
   gem "factory_bot_rails"
-  gem "i18n-tasks", "1.0.14"
+  gem "i18n-tasks", "1.0.15"
   gem "standard"
   gem "yard"
 end

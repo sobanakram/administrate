@@ -6,45 +6,18 @@ require "administrate/field/string"
 
 describe Administrate::Field::Deferred do
   describe "#permitted_attribute" do
-    context "when given a `foreign_key` option" do
-      before do
-        allow(Administrate.deprecator).to receive(:warn)
-      end
+    it "delegates to the backing class" do
+      deferred = Administrate::Field::Deferred.new(
+        Administrate::Field::String
+      )
+      allow(Administrate::Field::String).to receive(:permitted_attribute)
 
-      it "returns the value given" do
-        deferred = Administrate::Field::Deferred.new(
-          Administrate::Field::BelongsTo,
-          foreign_key: :bar
-        )
-        expect(deferred.permitted_attribute(:foo, resource_class: LineItem))
-          .to eq(:bar)
-      end
+      deferred.permitted_attribute(:foo, resource_class: LineItem)
 
-      it "triggers a deprecation warning" do
-        deferred = Administrate::Field::Deferred.new(
-          Administrate::Field::BelongsTo,
-          foreign_key: :bar
-        )
-        deferred.permitted_attribute(:foo, resource_class: LineItem)
-        expect(Administrate.deprecator).to have_received(:warn)
-          .with(/:foreign_key is deprecated/)
-      end
-    end
-
-    context "when not given a `foreign_key` option" do
-      it "delegates to the backing class" do
-        deferred = Administrate::Field::Deferred.new(
-          Administrate::Field::String
-        )
-        allow(Administrate::Field::String).to receive(:permitted_attribute)
-
-        deferred.permitted_attribute(:foo, resource_class: LineItem)
-
-        expect(Administrate::Field::String).to(
-          have_received(:permitted_attribute)
-            .with(:foo, resource_class: LineItem)
-        )
-      end
+      expect(Administrate::Field::String).to(
+        have_received(:permitted_attribute)
+          .with(:foo, resource_class: LineItem)
+      )
     end
 
     context "when given a `class_name` option" do
@@ -94,6 +67,38 @@ describe Administrate::Field::Deferred do
 
         expect(searchable_deferred.searchable?).to eq(true)
         expect(unsearchable_deferred.searchable?).to eq(false)
+      end
+    end
+  end
+
+  describe "#sortable?" do
+    context "when given a `sortable` option" do
+      it "returns the value given" do
+        sortable_deferred = Administrate::Field::Deferred.new(
+          double(sortable?: false),
+          sortable: true
+        )
+        unsortable_deferred = Administrate::Field::Deferred.new(
+          double(sortable?: true),
+          sortable: false
+        )
+
+        expect(sortable_deferred.sortable?).to eq(true)
+        expect(unsortable_deferred.sortable?).to eq(false)
+      end
+    end
+
+    context "when not given a `sortable` option" do
+      it "falls back to the default of the deferred class" do
+        sortable_deferred = Administrate::Field::Deferred.new(
+          double(sortable?: true)
+        )
+        unsortable_deferred = Administrate::Field::Deferred.new(
+          double(sortable?: false)
+        )
+
+        expect(sortable_deferred.sortable?).to eq(true)
+        expect(unsortable_deferred.sortable?).to eq(false)
       end
     end
   end

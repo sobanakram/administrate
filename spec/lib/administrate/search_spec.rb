@@ -54,7 +54,7 @@ describe Administrate::Search do
           ATTRIBUTE_TYPES = {
             role: Administrate::Field::BelongsTo.with_options(
               searchable: true,
-              searchable_field: "name"
+              searchable_fields: ["name"]
             ),
             author: Administrate::Field::BelongsTo.with_options(
               searchable: true,
@@ -74,9 +74,6 @@ describe Administrate::Search do
   after :all do
     Administrate.send(:remove_const, :SearchSpecMocks)
   end
-
-  before { Administrate.deprecator.silenced = true }
-  after { Administrate.deprecator.silenced = false }
 
   describe "#run" do
     it "returns all records when no search term" do
@@ -160,10 +157,6 @@ describe Administrate::Search do
     end
 
     context "when searching through associations" do
-      before do
-        allow(Administrate.deprecator).to receive(:warn)
-      end
-
       let(:scoped_object) { Administrate::SearchSpecMocks::Foo }
 
       let(:search) do
@@ -207,20 +200,6 @@ describe Administrate::Search do
         expect(scoped_object).to(
           have_received(:where).with(*expected_query)
         )
-      end
-
-      it "triggers a deprecation warning" do
-        allow(scoped_object).to receive(:where)
-        allow(scoped_object).to(
-          receive(:left_joins)
-            .with(%i[role author address])
-            .and_return(scoped_object)
-        )
-
-        search.run
-
-        expect(Administrate.deprecator).to have_received(:warn)
-          .with(/:class_name is deprecated/)
       end
     end
 

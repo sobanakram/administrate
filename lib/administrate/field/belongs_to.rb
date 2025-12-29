@@ -5,12 +5,7 @@ module Administrate
     class BelongsTo < Associative
       def self.permitted_attribute(attr, options = {})
         resource_class = options[:resource_class]
-        if resource_class
-          foreign_key_for(resource_class, attr)
-        else
-          Administrate.warn_of_missing_resource_class
-          :"#{attr}_id"
-        end
+        foreign_key_for(resource_class, attr)
       end
 
       def self.eager_load?
@@ -34,8 +29,43 @@ module Administrate
         data&.send(association_primary_key)
       end
 
+      def tag_options
+        {include_blank: selectize_include_blank}
+      end
+
+      def html_options
+        {
+          placeholder: selectize_placeholder,
+          data: {
+            controller: html_controller,
+            **selectize_required_options
+          }
+        }
+      end
+
       def include_blank_option
         options.fetch(:include_blank, true)
+      end
+
+      def selectize_include_blank
+        if include_blank_option === true
+          # I18n.t(:"helpers.select.prompt")
+          "---" # Workaround for https://github.com/selectize/selectize.js/issues/1498
+        elsif include_blank_option.is_a?(::String)
+          include_blank_option
+        end
+      end
+
+      def selectize_placeholder
+        selectize_include_blank
+      end
+
+      def selectize_required_options
+        if include_blank_option === false
+          {"selectize-required": true}
+        else
+          {}
+        end
       end
 
       private

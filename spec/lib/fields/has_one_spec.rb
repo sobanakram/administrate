@@ -42,10 +42,6 @@ describe Administrate::Field::HasOne do
 
   describe ".permitted_attribute" do
     context "with custom class_name" do
-      before do
-        allow(Administrate.deprecator).to receive(:warn)
-      end
-
       it "returns attributes from correct dashboard" do
         field = Administrate::Field::Deferred.new(
           Administrate::Field::HasOne,
@@ -60,24 +56,10 @@ describe Administrate::Field::HasOne do
         expect(attributes[:"#{field_name}_attributes"])
           .to eq(%i[meta_title meta_description id])
       end
-
-      it "triggers a deprecation warning" do
-        field = Administrate::Field::Deferred.new(
-          Administrate::Field::HasOne,
-          class_name: :product_meta_tag
-        )
-        field_name = "product_meta_tag"
-        field.permitted_attribute(
-          field_name,
-          resource_class: Product
-        )
-        expect(Administrate.deprecator).to have_received(:warn)
-          .with(/:class_name is deprecated/)
-      end
     end
   end
 
-  describe "#to_partial_path" do
+  describe "#partial_prefixes" do
     it "returns a partial based on the page being rendered" do
       resource = double
       page = :show
@@ -89,9 +71,9 @@ describe Administrate::Field::HasOne do
         resource: resource
       )
 
-      path = field.to_partial_path
+      prefixes = field.partial_prefixes
 
-      expect(path).to eq("/fields/has_one/#{page}")
+      expect(prefixes).to eq(["fields/has_one", "fields/associative", "fields/base"])
     end
   end
 

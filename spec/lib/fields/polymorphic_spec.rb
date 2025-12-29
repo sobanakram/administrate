@@ -3,6 +3,7 @@ require "administrate/field/belongs_to"
 require "administrate/field/polymorphic"
 require "support/constant_helpers"
 require "support/field_matchers"
+require "ostruct"
 
 describe Administrate::Field::Polymorphic do
   include FieldMatchers
@@ -18,14 +19,16 @@ describe Administrate::Field::Polymorphic do
     end
   end
 
-  describe "#to_partial_path" do
+  describe "#partial_prefixes" do
     it "returns a partial based on the page being rendered" do
       page = :show
       field = Administrate::Field::Polymorphic.new(:foo, "hello", page)
 
-      path = field.to_partial_path
+      prefixes = field.partial_prefixes
 
-      expect(path).to eq("/fields/polymorphic/#{page}")
+      expect(prefixes).to eq(
+        ["fields/polymorphic", "fields/belongs_to", "fields/associative", "fields/base"]
+      )
     end
   end
 
@@ -95,6 +98,65 @@ describe Administrate::Field::Polymorphic do
 
         expect(field.send(:classes)).to eq(classes.call)
       end
+    end
+  end
+
+  describe "#associated_resource_grouped_options" do
+    it "returns grouped options with display names and global IDs" do
+      Comment = Class.new
+      instance = described_class.new(:comment, Comment.new, :show, resource: {})
+
+      Article = Class.new do
+        def self.model_name
+          OpenStruct.new(human: "Article")
+        end
+      end
+
+      Recipe = Class.new do
+        def self.model_name
+          OpenStruct.new(human: "Recipe")
+        end
+      end
+
+      resource1 = double("Hello World", to_global_id: "gid://app/Article/1")
+      resource2 = double("Today's journal", to_global_id: "gid://app/Article/2")
+      resource3 = double("Lasagna", to_global_id: "gid://app/Recipe/3")
+
+      allow(instance).to receive(:classes)
+        .and_return([Article, Recipe])
+      allow(instance).to receive(:candidate_resources_for)
+        .with(Article)
+        .and_return([resource1, resource2])
+      allow(instance).to receive(:candidate_resources_for)
+        .with(Recipe)
+        .and_return([resource3])
+      allow(instance).to receive(:display_candidate_resource)
+        .with(resource1)
+        .and_return("Hello World")
+      allow(instance).to receive(:display_candidate_resource)
+        .with(resource2)
+        .and_return("Today's journal")
+      allow(instance).to receive(:display_candidate_resource)
+        .with(resource3)
+        .and_return("Lasagna")
+
+      result = instance.associated_resource_grouped_options
+
+      expected_result = [
+        ["Article",
+          [
+            ["Hello World", "gid://app/Article/1"],
+            ["Today's journal", "gid://app/Article/2"]
+          ]],
+        ["Recipe",
+          [
+            ["Lasagna", "gid://app/Recipe/3"]
+          ]]
+      ]
+
+      expect(result).to eq(expected_result)
+    ensure
+      remove_constants :Comment, :Article, :Recipe
     end
   end
 end

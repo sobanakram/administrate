@@ -10,12 +10,14 @@ module Administrate
       resources = order.apply(resources)
       resources = paginate_resources(resources)
       page = Administrate::Page::Collection.new(dashboard, order: order)
+      filters = Administrate::Search.new(scoped_resource, dashboard, search_term).valid_filters
 
       render locals: {
         resources: resources,
         search_term: search_term,
         page: page,
-        show_search_bar: show_search_bar?
+        show_search_bar: show_search_bar?,
+        filters: filters
       }
     end
 
@@ -120,15 +122,6 @@ module Administrate
     end
     helper_method :existing_action?
 
-    # @deprecated Use {#existing_action} instead. Note that, in
-    #   {#existing_action}, the order of parameters is reversed and
-    #   there is no default value for the `resource` parameter.
-    def valid_action?(action_name, resource = resource_class)
-      Administrate.warn_of_deprecated_authorization_method(__method__)
-      existing_action?(resource, action_name)
-    end
-    helper_method :valid_action?
-
     def routes
       @routes ||= Namespace.new(namespace).routes.to_set
     end
@@ -141,16 +134,18 @@ module Administrate
       @order ||= Administrate::Order.new(
         sorting_attribute,
         sorting_direction,
-        association_attribute: order_by_field(
+        sorting_column: sorting_column(
           dashboard_attribute(sorting_attribute)
         )
       )
     end
 
-    def order_by_field(dashboard)
-      return unless dashboard.try(:options)
+    def sorting_column(dashboard_attribute)
+      return unless dashboard_attribute.try(:options)
 
-      dashboard.options.fetch(:order, nil)
+      dashboard_attribute.options.fetch(:sorting_column) {
+        dashboard_attribute.options.fetch(:order, nil)
+      }
     end
 
     def dashboard_attribute(attribute)
@@ -260,14 +255,6 @@ module Administrate
       true
     end
     helper_method :authorized_action?
-
-    # @deprecated Use {#authorized_action} instead. Note that the order of
-    #   parameters is reversed in {#authorized_action}.
-    def show_action?(action, resource)
-      Administrate.warn_of_deprecated_authorization_method(__method__)
-      authorized_action?(resource, action)
-    end
-    helper_method :show_action?
 
     def new_resource(params = {})
       resource_class.new(params)

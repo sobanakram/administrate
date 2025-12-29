@@ -26,15 +26,15 @@ describe Administrate::Field::BelongsTo do
     end
   end
 
-  describe "#to_partial_path" do
+  describe "#partial_prefixes" do
     it "returns a partial based on the page being rendered" do
       page = :show
       owner = double
       field = Administrate::Field::BelongsTo.new(:owner, owner, page)
 
-      path = field.to_partial_path
+      prefixes = field.partial_prefixes
 
-      expect(path).to eq("/fields/belongs_to/#{page}")
+      expect(prefixes).to eq(["fields/belongs_to", "fields/associative", "fields/base"])
     end
   end
 
@@ -99,10 +99,6 @@ describe Administrate::Field::BelongsTo do
   end
 
   describe "class_name option" do
-    before do
-      allow(Administrate.deprecator).to receive(:warn)
-    end
-
     it "determines the associated_class" do
       line_item = create(:line_item)
       field_class = Administrate::Field::BelongsTo.with_options(
@@ -171,73 +167,71 @@ describe Administrate::Field::BelongsTo do
         expect(candidates).to eq([])
       end
     end
-  end
 
-  describe "primary_key option" do
-    before do
-      allow(Administrate.deprecator).to receive(:warn)
-
-      stub_const("Foo", Class.new)
-      stub_const("FooDashboard", Class.new)
-      uuid = SecureRandom.uuid
-      allow(Foo).to receive(:all).and_return([Foo])
-      allow(Foo).to receive(:uuid).and_return(uuid)
-      allow(Foo).to receive(:id).and_return(1)
-      allow_any_instance_of(FooDashboard).to(
-        receive(:display_resource).and_return(uuid)
-      )
-    end
-
-    it "is the associated table key that matches our foreign key" do
-      association =
-        Administrate::Field::BelongsTo.with_options(
-          primary_key: "uuid", class_name: "Foo"
+    context "when given an include_blank option is true" do
+      it "returns include_blank and placeholder options with '---'" do
+        customer = create(:customer, territory: nil)
+        association = Administrate::Field::BelongsTo.with_options(
+          include_blank: true
         )
-      field = association.new(:customers, [], :show)
-      field.associated_resource_options
-
-      expect(Foo).to have_received(:all)
-      expect(Foo).to have_received(:uuid)
-      expect(Foo).not_to have_received(:id)
-    end
-
-    it "triggers a deprecation warning" do
-      association =
-        Administrate::Field::BelongsTo.with_options(
-          primary_key: "uuid"
+        field = association.new(
+          :territory,
+          [],
+          :edit,
+          resource: customer
         )
-      field = association.new(:foo, double(uuid: nil), :baz)
-      field.selected_option
 
-      expect(Administrate.deprecator).to have_received(:warn)
-        .with(/:primary_key is deprecated/)
-    end
-  end
+        tag_options = field.tag_options
+        html_options = field.html_options
 
-  describe "foreign_key option" do
-    before do
-      allow(Administrate.deprecator).to receive(:warn)
+        expect(tag_options[:include_blank]).to eq("---")
+        expect(html_options[:placeholder]).to eq("---")
+        expect(html_options.dig(:data, :"selectize-required")).to be_nil
+      end
     end
 
-    it "determines what foreign key is used on the relationship for the form" do
-      association = Administrate::Field::BelongsTo.with_options(
-        foreign_key: "foo_uuid", class_name: "Foo"
-      )
-      field = association.new(:customers, [], :show)
-      permitted_attribute = field.permitted_attribute
-      expect(permitted_attribute).to eq("foo_uuid")
+    context "when given an include_blank option is a string" do
+      it "returns include_blank and placeholder options with the given string" do
+        customer = create(:customer, territory: nil)
+        association = Administrate::Field::BelongsTo.with_options(
+          include_blank: "Select an option"
+        )
+        field = association.new(
+          :territory,
+          [],
+          :edit,
+          resource: customer
+        )
+
+        tag_options = field.tag_options
+        html_options = field.html_options
+
+        expect(tag_options[:include_blank]).to eq("Select an option")
+        expect(html_options[:placeholder]).to eq("Select an option")
+        expect(html_options.dig(:data, :"selectize-required")).to be_nil
+      end
     end
 
-    it "triggers a deprecation warning" do
-      association = Administrate::Field::BelongsTo.with_options(
-        foreign_key: "foo_uuid", class_name: "Foo"
-      )
-      field = association.new(:customers, [], :show)
+    context "when given an include_blank option is false" do
+      it "returns include_blank and placeholder options with nil" do
+        customer = create(:customer, territory: nil)
+        association = Administrate::Field::BelongsTo.with_options(
+          include_blank: false
+        )
+        field = association.new(
+          :territory,
+          [],
+          :edit,
+          resource: customer
+        )
 
-      field.permitted_attribute
+        tag_options = field.tag_options
+        html_options = field.html_options
 
-      expect(Administrate.deprecator).to have_received(:warn)
-        .with(/:foreign_key is deprecated/)
+        expect(tag_options[:include_blank]).to eq(nil)
+        expect(html_options[:placeholder]).to eq(nil)
+        expect(html_options.dig(:data, :"selectize-required")).to eq(true)
+      end
     end
   end
 
